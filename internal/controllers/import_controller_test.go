@@ -57,9 +57,10 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 
 	BeforeEach(func() {
 		r = &CAPIImportReconciler{
-			Client:             cl,
-			RancherClient:      cl, // rancher and rancher-turtles deployed in the same cluster
-			remoteClientGetter: remote.NewClusterClient,
+			Client:                cl,
+			RancherClient:         cl, // rancher and rancher-turtles deployed in the same cluster
+			remoteClientGetter:    remote.NewClusterClient,
+			ManagementClusterName: "test-management-cluster",
 		}
 
 		capiCluster = &clusterv1.Cluster{
@@ -71,7 +72,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 
 		rancherCluster = &provisioningv1.Cluster{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      turtlesnaming.Name(capiCluster.Name).ToRancherName(),
+				Name:      turtlesnaming.Name(capiCluster.Name).ToRancherName(r.ManagementClusterName),
 				Namespace: testNamespace,
 			},
 		}
@@ -161,6 +162,7 @@ var _ = Describe("reconcile CAPI Cluster", func() {
 
 		cluster := &provisioningv1.Cluster{}
 		Expect(cl.Get(ctx, client.ObjectKeyFromObject(rancherCluster), cluster)).ToNot(HaveOccurred())
+		Expect(cluster.Labels).To(HaveKeyWithValue(managementClusterNameLabel, r.ManagementClusterName))
 	})
 
 	It("should reconcile a CAPI cluster when rancher cluster exists", func() {

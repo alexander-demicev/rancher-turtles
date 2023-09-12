@@ -63,6 +63,7 @@ var (
 	healthAddr                  string
 	concurrencyNumber           int
 	rancherKubeconfig           string
+	managementClusterName       string
 )
 
 func init() {
@@ -108,6 +109,9 @@ func initFlags(fs *pflag.FlagSet) {
 
 	fs.StringVar(&rancherKubeconfig, "rancher-kubeconfig", "",
 		"Path to the Rancher kubeconfig file. Only required if running out-of-cluster.")
+
+	fs.StringVar(&managementClusterName, "management-cluster-name", "",
+		"Name of the management cluster. Only required if running multiple management cluster instances out of Rancher Manager cluster.")
 }
 
 func main() {
@@ -173,9 +177,10 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager) {
 	}
 
 	if err := (&controllers.CAPIImportReconciler{
-		Client:           mgr.GetClient(),
-		RancherClient:    rancherClient,
-		WatchFilterValue: watchFilterValue,
+		Client:                mgr.GetClient(),
+		RancherClient:         rancherClient,
+		WatchFilterValue:      watchFilterValue,
+		ManagementClusterName: managementClusterName,
 	}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: concurrencyNumber}); err != nil {
 		setupLog.Error(err, "unable to create capi controller")
 		os.Exit(1)

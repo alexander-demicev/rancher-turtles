@@ -130,7 +130,7 @@ MANIFEST_IMG ?= $(CONTROLLER_IMG)-$(ARCH)
 # Relase
 RELEASE_TAG ?= $(shell git describe --abbrev=0 2>/dev/null)
 PREVIOUS_TAG ?= $(shell git describe --abbrev=0 --exclude $(RELEASE_TAG) 2>/dev/null)
-HELM_CHART_TAG := $(shell echo $(RELEASE_TAG) | cut -c 2-)
+HELM_CHART_TAG ?= $(shell echo $(RELEASE_TAG) | cut -c 2-)
 RELEASE_ALIAS_TAG ?= $(PULL_BASE_REF)
 CHART_DIR := charts/rancher-turtles
 RELEASE_DIR ?= out

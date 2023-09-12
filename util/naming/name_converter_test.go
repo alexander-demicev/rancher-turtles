@@ -24,26 +24,36 @@ import (
 )
 
 var _ = Describe("Cluster name mapping", func() {
-
-	It("Should suffix rancher cluster name with -capi", func() {
-		name := Name("some-cluster").ToRancherName()
+	It("Should only suffix rancher cluster name with -capi if management cluster name is not provided", func() {
+		name := Name("some-cluster").ToRancherName("")
 		Expect(name).To(Equal("some-cluster-capi"))
 	})
 
-	It("Should only add suffix once", func() {
-		name := Name("some-cluster").ToRancherName()
-		name = Name(name).ToRancherName()
-		Expect(string(name)).To(Equal("some-cluster-capi"))
+	It("Should prefix rancher cluster name with management cluster name -capi", func() {
+		name := Name("some-cluster").ToRancherName("mgmt-cluster-1")
+		Expect(name).To(Equal("mgmt-cluster-1-some-cluster-capi"))
 	})
 
-	It("should remove suffix from rancher cluster", func() {
-		name := Name("some-cluster").ToRancherName()
-		name = Name(name).ToCapiName()
+	It("Should only add prefix and suffix once", func() {
+		name := Name("some-cluster").ToRancherName("")
+		name = Name(name).ToRancherName("mgmt-cluster-1")
+		Expect(string(name)).To(Equal("mgmt-cluster-1-some-cluster-capi"))
+	})
+
+	It("Should remove suffix from rancher cluster if management cluster name is not provided", func() {
+		name := Name("some-cluster").ToRancherName("")
+		name = Name(name).ToCapiName("")
 		Expect(string(name)).To(Equal("some-cluster"))
 	})
 
-	It("should remove suffix from rancher cluster only if it is present", func() {
-		name := Name("some-cluster").ToCapiName()
+	It("Should remove prefix and suffix from rancher cluster", func() {
+		name := Name("some-cluster").ToRancherName("mgmt-cluster-1")
+		name = Name(name).ToCapiName("mgmt-cluster-1")
+		Expect(string(name)).To(Equal("some-cluster"))
+	})
+
+	It("Should remove suffix from rancher cluster only if it is present", func() {
+		name := Name("some-cluster").ToCapiName("")
 		Expect(string(name)).To(Equal("some-cluster"))
 	})
 })

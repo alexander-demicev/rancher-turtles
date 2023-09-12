@@ -58,18 +58,20 @@ import (
 
 const (
 	importLabelName              = "cluster-api.cattle.io/rancher-auto-import"
+	managementClusterNameLabel   = "cluster-api.cattle.io/management-cluster-name"
 	defaultRequeueDuration       = 1 * time.Minute
 	clusterRegistrationTokenName = "default-token"
 )
 
 // CAPIImportReconciler represents a reconciler for importing CAPI clusters in Rancher.
 type CAPIImportReconciler struct {
-	Client           client.Client
-	RancherClient    client.Client
-	recorder         record.EventRecorder
-	WatchFilterValue string
-	Scheme           *runtime.Scheme
+	Client                client.Client
+	RancherClient         client.Client
+	ManagementClusterName string
+	WatchFilterValue      string
+	Scheme                *runtime.Scheme
 
+	recorder           record.EventRecorder
 	controller         controller.Controller
 	externalTracker    external.ObjectTracker
 	remoteClientGetter remote.ClusterClientGetter
@@ -193,7 +195,7 @@ func (r *CAPIImportReconciler) reconcile(ctx context.Context, capiCluster *clust
 	// fetch the rancher cluster
 	rancherCluster := &provisioningv1.Cluster{ObjectMeta: metav1.ObjectMeta{
 		Namespace: capiCluster.Namespace,
-		Name:      turtlesnaming.Name(capiCluster.Name).ToRancherName(),
+		Name:      turtlesnaming.Name(capiCluster.Name).ToRancherName(r.ManagementClusterName),
 	}}
 
 	err := r.RancherClient.Get(ctx, client.ObjectKeyFromObject(rancherCluster), rancherCluster)
@@ -226,9 +228,9 @@ func (r *CAPIImportReconciler) reconcileNormal(ctx context.Context, capiCluster 
 			return ctrl.Result{}, nil
 		}
 
-		if err := r.Client.Create(ctx, &provisioningv1.Cluster{
+		rancherCluster := &provisioningv1.Cluster{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      turtlesnaming.Name(capiCluster.Name).ToRancherName(),
+				Name:      turtlesnaming.Name(capiCluster.Name).ToRancherName(r.ManagementClusterName),
 				Namespace: capiCluster.Namespace,
 				OwnerReferences: []metav1.OwnerReference{{
 					APIVersion: clusterv1.GroupVersion.String(),
@@ -237,7 +239,15 @@ func (r *CAPIImportReconciler) reconcileNormal(ctx context.Context, capiCluster 
 					UID:        capiCluster.UID,
 				}},
 			},
-		}); err != nil {
+		}
+
+		if r.ManagementClusterName != "" {
+			rancherCluster.Labels = map[string]string{
+				managementClusterNameLabel: r.ManagementClusterName,
+			}
+		}
+
+		if err := r.Client.Create(ctx, rancherCluster); err != nil {
 			return ctrl.Result{}, fmt.Errorf("error creating rancher cluster: %w", err)
 		}
 
@@ -340,7 +350,7 @@ func (r *CAPIImportReconciler) rancherClusterToCapiCluster(ctx context.Context, 
 
 	return func(_ context.Context, o client.Object) []ctrl.Request {
 		capiCluster := &clusterv1.Cluster{ObjectMeta: metav1.ObjectMeta{
-			Name:      turtlesnaming.Name(o.GetName()).ToCapiName(),
+			Name:      turtlesnaming.Name(o.GetName()).ToCapiName(r.ManagementClusterName),
 			Namespace: o.GetNamespace(),
 		}}
 		if err := r.Client.Get(ctx, client.ObjectKeyFromObject(capiCluster), capiCluster); err != nil {

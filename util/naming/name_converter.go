@@ -27,11 +27,16 @@ var rancherCAPISuffix = "-capi"
 type Name string
 
 // ToRancherName converts a CAPI cluster name to Rancher cluster name.
-func (n Name) ToRancherName() string {
-	return fmt.Sprintf("%s%s", n.ToCapiName(), rancherCAPISuffix)
+func (n Name) ToRancherName(managementClusterName string) string {
+	if managementClusterName == "" {
+		return fmt.Sprintf("%s%s", n.ToCapiName(managementClusterName), rancherCAPISuffix)
+
+	}
+	return fmt.Sprintf("%s-%s%s", managementClusterName, n.ToCapiName(managementClusterName), rancherCAPISuffix)
 }
 
 // ToCapiName converts a Rancher cluster name to CAPI cluster name.
-func (n Name) ToCapiName() string {
-	return strings.TrimSuffix(string(n), rancherCAPISuffix)
+func (n Name) ToCapiName(managementClusterName string) string {
+	trimManagementClusterPrefix := strings.TrimPrefix(string(n), fmt.Sprintf("%s-", managementClusterName))
+	return strings.TrimSuffix(string(trimManagementClusterPrefix), rancherCAPISuffix)
 }
