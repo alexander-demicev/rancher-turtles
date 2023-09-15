@@ -50,8 +50,8 @@ helm install rancher rancher-stable/rancher \
     --set bootstrapPassword=rancheradmin \
     --set replicas=1 \
     --set hostname="$RANCHER_HOSTNAME" \
-    --set 'extraEnv[0].name=CATTLE_FEATURES' \
-    --set 'extraEnv[0].value=embedded-cluster-api=false' \
+    --set 'extraEnv[0].name=CATTLE_SKIP_HOSTED_CLUSTER_CHART_INSTALLATION' \
+    --set-string 'extraEnv[0].value=true' \
     --set global.cattle.psp.enabled=false \
     --version v2.7.5 \
     --wait

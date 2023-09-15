@@ -103,14 +103,14 @@ func (r *CAPIImportReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Ma
 
 	// Watch Rancher provisioningv2 clusters
 	// NOTE: we will import the types from rancher in the future
-	err = c.Watch(
-		source.Kind(mgr.GetCache(), &provisioningv1.Cluster{}),
-		handler.EnqueueRequestsFromMapFunc(r.rancherClusterToCapiCluster(ctx, capiPredicates)),
-		//&handler.EnqueueRequestForOwner{OwnerType: &clusterv1.Cluster{}},
-	)
-	if err != nil {
-		return fmt.Errorf("adding watch for Rancher cluster: %w", err)
-	}
+	// err = c.Watch(
+	// 	source.Kind(mgr.GetCache(), &provisioningv1.Cluster{}),
+	// 	handler.EnqueueRequestsFromMapFunc(r.rancherClusterToCapiCluster(ctx, capiPredicates)),
+	// 	//&handler.EnqueueRequestForOwner{OwnerType: &clusterv1.Cluster{}},
+	// )
+	// if err != nil {
+	// 	return fmt.Errorf("adding watch for Rancher cluster: %w", err)
+	// }
 
 	ns := &corev1.Namespace{}
 	err = c.Watch(
@@ -216,7 +216,7 @@ func (r *CAPIImportReconciler) reconcileNormal(ctx context.Context, capiCluster 
 ) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
 
-	err := r.Client.Get(ctx, client.ObjectKeyFromObject(rancherCluster), rancherCluster)
+	err := r.RancherClient.Get(ctx, client.ObjectKeyFromObject(rancherCluster), rancherCluster)
 	if apierrors.IsNotFound(err) {
 		shouldImport, err := util.ShouldAutoImport(ctx, log, r.Client, capiCluster, importLabelName)
 		if err != nil {
@@ -247,7 +247,9 @@ func (r *CAPIImportReconciler) reconcileNormal(ctx context.Context, capiCluster 
 			}
 		}
 
-		if err := r.Client.Create(ctx, rancherCluster); err != nil {
+		log.Info("creating rancher cluster", "name", rancherCluster.Name)
+
+		if err := r.RancherClient.Create(ctx, rancherCluster); err != nil {
 			return ctrl.Result{}, fmt.Errorf("error creating rancher cluster: %w", err)
 		}
 
