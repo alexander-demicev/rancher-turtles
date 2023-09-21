@@ -60,7 +60,24 @@ spec:
           requests:
             cpu: 10m
             memory: 64Mi
+        {{- if .Values.secretVolumeMounts }}
+        volumeMounts:
+        {{- range .Values.secretVolumeMounts }}
+        - mountPath: {{ .mountPath }}
+          name: {{ .name }}
+          readOnly: true
+        {{- end }} 
+        {{- end }} 
       serviceAccountName: rancher-turtles-manager
+     {{- if .Values.secretVolumeMounts }}
+     {{- range .Values.secretVolumeMounts }}
+      volumes:
+      - name: {{ .name }}
+        secret:
+          defaultMode: 420
+          secretName: {{ .secretName }}
+      {{- end }}
+      {{- end }}
       terminationGracePeriodSeconds: 10
       tolerations:
       - effect: NoSchedule

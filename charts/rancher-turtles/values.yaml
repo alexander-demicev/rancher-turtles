@@ -4,6 +4,7 @@ rancherTurtles:
   imagePullPolicy: Never
   namespace: rancher-turtles-system
   managerArguments: {}
+  secretVolumeMounts: {} # Supported nested keys: name, secretName, mountPath
 cluster-api-operator:
   enabled: true
   cert-manager:
