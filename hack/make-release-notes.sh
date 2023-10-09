@@ -29,3 +29,4 @@ git checkout FETCH_HEAD -- hack/tools/release/notes.go
 go build hack/tools/release/notes.go 
 mv notes $TOOLS_FOLDER
 cd - && rm -rf $TOOLS_FOLDER/cluster-api
+echo "Test"
