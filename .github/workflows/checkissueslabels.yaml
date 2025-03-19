@@ -1,0 +1,51 @@
+name: Check Issue Area Label
+
+on:
+  issues:
+    types: [opened, labeled, unlabeled]
+
+jobs:
+  manage-area-labels:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check and manage labels
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BOT_COMMENT: "Please add an appropriate `area/*` label (e.g., area/feature, area/bug) to this issue."
+        run: |
+          # Function to make API calls cleaner
+          gh_api() {
+            curl -s -H "Authorization: token $GITHUB_TOKEN" \
+                 -H "Accept: application/vnd.github.v3+json" "$@"
+          }
+          
+          ISSUE_URL="https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}"
+          
+          # Get labels and comments in parallel
+          LABELS=$(gh_api "$ISSUE_URL/labels")
+          COMMENTS=$(gh_api "$ISSUE_URL/comments")
+          
+          # Check label states
+          HAS_AREA=$(echo "$LABELS" | grep -q '"name":"area/' && echo "true" || echo "false")
+          HAS_NEEDS_AREA=$(echo "$LABELS" | grep -q '"name":"needs-area"' && echo "true" || echo "false")
+          
+          # Find bot comment ID
+          COMMENT_ID=$(echo "$COMMENTS" | grep -B1 "$BOT_COMMENT" | grep '"id":' | head -n1 | cut -d' ' -f2 | tr -d ',')
+          
+          if [ "$HAS_AREA" = "true" ]; then
+            echo "Found area label"
+            # Remove needs-area label if present
+            [ "$HAS_NEEDS_AREA" = "true" ] && gh_api -X DELETE "$ISSUE_URL/labels/needs-area" && echo "Removed needs-area label"
+            # Remove bot comment if exists
+            [ -n "$COMMENT_ID" ] && gh_api -X DELETE "$ISSUE_URL/comments/$COMMENT_ID" && echo "Removed bot comment (ID: $COMMENT_ID)"
+            exit 0
+          else
+            echo "No area/* label found"
+            # Add needs-area label if not present
+            [ "$HAS_NEEDS_AREA" = "false" ] && gh_api -X POST -d '{"labels":["needs-area"]}' "$ISSUE_URL/labels" && echo "Added needs-area label"
+            # Add bot comment on new issue if not present
+            if [ "${{ github.event.action }}" = "opened" ] && [ -z "$COMMENT_ID" ]; then
+              gh_api -X POST -d "{\"body\":\"$BOT_COMMENT\"}" "$ISSUE_URL/comments" && echo "Added bot comment"
+            fi
+            exit 1
+          fi
