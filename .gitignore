@@ -40,3 +40,5 @@ hack/crd/bases/*
 **/Chart.lock
 
 .buildx-cache/
+
+testignore
