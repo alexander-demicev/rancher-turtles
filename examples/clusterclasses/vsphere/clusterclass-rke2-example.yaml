@@ -257,7 +257,6 @@ spec:
           kubernetesComponents:
           - cloudController
       replicas: 1
-      nodeDrainTimeout: 2m
       preRKE2Commands:
         - sleep 30 #fix to give OS time to become ready
       agentConfig:

@@ -1,0 +1,23 @@
+apiVersion: fleet.cattle.io/v1alpha1
+kind: HelmApp
+metadata:
+  name: vsphere-rke2-cpi
+spec:
+  defaultNamespace: kube-system
+  helm:
+    releaseName: rancher-vsphere-cpi
+    repo: https://rke2-charts.rancher.io/
+    chart: rancher-vsphere-cpi
+    templateValues:
+      vCenter: |-
+        credentialsSecret:
+          generate: false
+  insecureSkipTLSVerify: true
+  targets:
+  - clusterSelector:
+      matchLabels:
+        cloud-provider: vsphere
+      matchExpressions:
+      - key: clusterclass-name.fleet.addons.cluster.x-k8s.io
+        operator: In
+        values: [vsphere-rke2-example]

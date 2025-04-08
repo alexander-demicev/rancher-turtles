@@ -21,7 +21,6 @@ package import_gitops_v3
 
 import (
 	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 
 	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 
@@ -414,7 +413,7 @@ var _ = Describe("[vSphere] [Kubeadm] Create and delete CAPI cluster from cluste
 			},
 			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
 				{
-					Name:            "vsphere-cluster-classes-kubeadm",
+					Name:            "vsphere-cluster-classes",
 					TargetNamespace: topologyNamespace,
 					Paths:           []string{"examples/clusterclasses/vsphere"},
 					ClusterProxy:    bootstrapClusterProxy,
@@ -425,15 +424,33 @@ var _ = Describe("[vSphere] [Kubeadm] Create and delete CAPI cluster from cluste
 					ClusterProxy:    bootstrapClusterProxy,
 					TargetNamespace: topologyNamespace,
 				},
+				{
+					Name:            "vsphere-cpi",
+					Paths:           []string{"examples/applications/ccm/vsphere"},
+					ClusterProxy:    bootstrapClusterProxy,
+					TargetNamespace: topologyNamespace,
+				},
+				{
+					Name:            "vsphere-csi",
+					Paths:           []string{"examples/applications/csi/vsphere"},
+					ClusterProxy:    bootstrapClusterProxy,
+					TargetNamespace: topologyNamespace,
+				},
 			},
 		}
 	})
 })
 
-var _ = Describe("[vSphere] [RKE2] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.VsphereTestLabel, e2e.Rke2TestLabel), func() {
+var _ = FDescribe("[vSphere] [RKE2] Create and delete CAPI cluster functionality should work with namespace auto-import", Label(e2e.VsphereTestLabel, e2e.Rke2TestLabel), func() {
+	var (
+		topologyNamespace string
+	)
+
 	BeforeEach(func() {
 		komega.SetClient(bootstrapClusterProxy.GetClient())
 		komega.SetContext(ctx)
+
+		topologyNamespace = "creategitops-vsphere-rke2"
 	})
 
 	specs.CreateMgmtV3UsingGitOpsSpec(ctx, func() specs.CreateMgmtV3UsingGitOpsSpecInput {
@@ -451,19 +468,6 @@ var _ = Describe("[vSphere] [RKE2] Create and delete CAPI cluster functionality 
 					Namespace: "capv-system",
 				},
 			},
-		})
-
-		// Add the needed ClusterClass and ClusterResourceSet
-		topologyNamespace := "creategitops-vsphere-rke2"
-		err := turtlesframework.CreateNamespace(ctx, bootstrapClusterProxy, topologyNamespace)
-		Expect(err).ToNot(HaveOccurred(), "Failed to create namespace %q", topologyNamespace)
-
-		By("Applying vSphere ClusterClasses")
-		turtlesframework.FleetCreateGitRepo(ctx, turtlesframework.FleetCreateGitRepoInput{
-			Name:            "vsphere-cluster-classes",
-			TargetNamespace: topologyNamespace,
-			Paths:           []string{"examples/clusterclasses/vsphere"},
-			ClusterProxy:    bootstrapClusterProxy,
 		})
 
 		return specs.CreateMgmtV3UsingGitOpsSpecInput{
@@ -484,6 +488,26 @@ var _ = Describe("[vSphere] [RKE2] Create and delete CAPI cluster functionality 
 			OwnedLabelName:                 e2e.OwnedLabelName,
 			AdditionalTemplateVariables: map[string]string{
 				"VIP_NETWORK_INTERFACE": "",
+			},
+			AdditionalFleetGitRepos: []turtlesframework.FleetCreateGitRepoInput{
+				{
+					Name:            "vsphere-cluster-classes",
+					TargetNamespace: topologyNamespace,
+					Paths:           []string{"examples/clusterclasses/vsphere"},
+					ClusterProxy:    bootstrapClusterProxy,
+				},
+				{
+					Name:            "vsphere-cpi",
+					Paths:           []string{"examples/applications/ccm/vsphere"},
+					ClusterProxy:    bootstrapClusterProxy,
+					TargetNamespace: topologyNamespace,
+				},
+				{
+					Name:            "vsphere-csi",
+					Paths:           []string{"examples/applications/csi/vsphere"},
+					ClusterProxy:    bootstrapClusterProxy,
+					TargetNamespace: topologyNamespace,
+				},
 			},
 		}
 	})
