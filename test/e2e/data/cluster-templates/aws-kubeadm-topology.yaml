@@ -32,34 +32,34 @@ spec:
       - class: default-worker
         name: md-0
         replicas: ${WORKER_MACHINE_COUNT}
+# ---
+# apiVersion: addons.cluster.x-k8s.io/v1beta1
+# kind: ClusterResourceSet
+# metadata:
+#   name: crs-cni
+#   namespace: ${NAMESPACE}
+# spec:
+#   clusterSelector:
+#     matchLabels:
+#       cni: calico
+#   resources:
+#   - kind: ConfigMap
+#     name: calico-cni
+#   strategy: ApplyOnce
 ---
 apiVersion: addons.cluster.x-k8s.io/v1beta1
 kind: ClusterResourceSet
 metadata:
-  name: crs-cni
-  namespace: ${NAMESPACE}
+ name: crs-ccm
+ namespace: ${NAMESPACE}
 spec:
-  clusterSelector:
-    matchLabels:
-      cni: calico
-  resources:
-  - kind: ConfigMap
-    name: calico-cni
-  strategy: ApplyOnce
-#---
-#apiVersion: addons.cluster.x-k8s.io/v1beta1
-#kind: ClusterResourceSet
-#metadata:
-#  name: crs-ccm
-#  namespace: ${NAMESPACE}
-#spec:
-#  clusterSelector:
-#    matchLabels:
-#      cloudprovider: aws
-#  resources:
-#  - kind: ConfigMap
-#    name: cloud-controller-manager-addon
-#  strategy: ApplyOnce
+ clusterSelector:
+   matchLabels:
+     cloudprovider: aws
+ resources:
+ - kind: ConfigMap
+   name: cloud-controller-manager-addon
+ strategy: ApplyOnce
 #---
 #apiVersion: addons.cluster.x-k8s.io/v1beta1
 #kind: ClusterResourceSet

@@ -12,12 +12,12 @@ spec:
         cni:
           type: Calico
         calicoNetwork:
-          bgp: Disabled
-          mtu: 1350
+          bgp: Enabled
+          mtu: 1440
           ipPools:
             ${- range $cidr := .ClusterValues.Cluster.spec.clusterNetwork.pods.cidrBlocks }
             - cidr: "${ $cidr }"
-              encapsulation: VXLAN${- end}
+            ${- end}
   diff:
     comparePatches:
     - apiVersion: operator.tigera.io/v1
