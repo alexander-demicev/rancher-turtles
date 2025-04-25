@@ -430,6 +430,9 @@ var _ = Describe("[AWS] [EC2 RKE2] Create and delete CAPI cluster functionality 
 					TargetNamespace: topologyNamespace,
 				},
 			},
+			AdditionalTemplateVariables: map[string]string{
+				"KUBERNETES_VERSION": e2e.LoadE2EConfig().MustGetVariable(e2e.RKE2VersionVar),
+			},
 		}
 	})
 })

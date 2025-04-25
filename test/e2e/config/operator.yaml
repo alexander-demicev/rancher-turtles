@@ -7,11 +7,11 @@ images:
 
 intervals:
   default/wait-controllers: ["15m", "10s"]
-  default/wait-rancher: ["15m", "30s"]
+  default/wait-rancher: ["50m", "30s"]
   default/wait-snapshot: ["20m", "30s"]
   default/wait-delete-cluster: ["30m", "30s"]
   default/wait-v2prov-create: ["25m", "30s"]
-  default/wait-capa-create-cluster: ["50m", "30s"]
+  default/wait-capa-create-cluster: ["120m", "30s"]
   default/wait-capz-create-cluster: ["35m", "30s"]
   default/wait-capg-create-cluster: ["30m", "30s"]
   default/wait-capv-create-cluster: ["30m", "30s"]
@@ -40,9 +40,9 @@ variables:
   SECRET_KEYS: "NGROK_AUTHTOKEN,NGROK_API_KEY,RANCHER_HOSTNAME,RANCHER_PASSWORD,CAPA_ENCODED_CREDS,CAPG_ENCODED_CREDS,AZURE_SUBSCRIPTION_ID,AZURE_CLIENT_ID,AZURE_CLIENT_SECRET,AZURE_TENANT_ID,GCP_PROJECT,GCP_NETWORK_NAME,VSPHERE_TLS_THUMBPRINT,VSPHERE_SERVER,VSPHERE_DATACENTER,VSPHERE_DATASTORE,VSPHERE_FOLDER,VSPHERE_TEMPLATE,VSPHERE_NETWORK,VSPHERE_RESOURCE_POOL,VSPHERE_USERNAME,VSPHERE_PASSWORD,CONTROL_PLANE_ENDPOINT_IP"
 
   # Kubernetes Configuration
-  KUBERNETES_VERSION: "v1.32.0"
+  KUBERNETES_VERSION: "v1.31.4"
   KUBERNETES_MANAGEMENT_VERSION: "v1.32.0"
-  RKE2_VERSION: "v1.32.0+rke2r1"
+  RKE2_VERSION: "v1.31.7"
   RKE2_CNI: "none"
 
   # AWS Configuration
