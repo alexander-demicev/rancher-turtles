@@ -1,0 +1,22 @@
+name: Cherry-Pick Automation
+
+on:
+  pull_request_target:
+    types: [closed, labeled]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  cherry-pick:
+    name: Cherry-pick merged PR
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true
+    
+    steps:
+      - name: Cherry-pick
+        uses: alexander-demicev/cherry-pick-action@v0.1.0-test
+        with:
+          github_token: ${{ secrets.GH_TOKEN }}
+          log_level: debug
