@@ -57,19 +57,17 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 		SetContext(ctx)
 	})
 
-	// Note that this test suite requires an older installation of Turtles
-	// where the separate cluster-api-operator is still deployed.
-	// The embedded cluster-api-operator was shipped in Turtles v0.22.0,
-	// so any version installed here should be lower.
-	//
-	// Consider reworking this suite in the future to test latest --> head/main instead,
-	// once testing the successful embedding of cluster-api-operator will no longer be required.
-	It("Should install old version of Turtles", func() {
+	// Note that this test suite tests migration from v0.24.x to v0.25.x
+	// which includes migration from separate cluster-api-operator to embedded operator,
+	// and migration to the new system chart controller architecture.
+	// The old version (v0.24.x) is installed using helm install, and the upgrade
+	// uses the system chart controller via Gitea chart repository.
+	It("Should install old version of Turtles using helm", func() {
 		rtInput := testenv.DeployRancherTurtlesInput{
 			BootstrapClusterProxy: bootstrapClusterProxy,
 			TurtlesChartRepoName:  "rancher-turtles",
 			TurtlesChartUrl:       "https://rancher.github.io/turtles",
-			Version:               "v0.21.0",
+			Version:               "v0.24.3",
 			AdditionalValues: map[string]string{
 				"rancherTurtles.namespace": e2e.RancherTurtlesNamespace,
 			},
@@ -154,7 +152,7 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 		})
 	})
 
-	It("Should upgrade Turtles to head/main and validate providers", func() {
+	It("Should upgrade Turtles via system chart controller and validate providers", func() {
 		// There can be only one core CAPI provider installed at a time.
 		By("Remove the core CAPI provider before upgrade")
 		testenv.RemoveCAPIProvider(ctx, testenv.RemoveCAPIProviderInput{
@@ -163,11 +161,35 @@ var _ = Describe("Chart upgrade functionality should work", Ordered, Label(e2e.S
 			ProviderNamespace:     "capi-system",
 		})
 
-		// Upgrade Turtles chart to locally built one
-		testenv.DeployRancherTurtles(ctx, testenv.DeployRancherTurtlesInput{
+		By("Configuring Rancher to use Gitea chart repository for system chart controller")
+		// Update Rancher deployment with environment variables to enable system chart controller
+		// This simulates upgrading Rancher to a version with system chart controller support
+		// The chart version was passed from the setup phase where it was populated from RANCHER_CHART_DEV_VERSION
+		testenv.UpdateRancherDeploymentWithChartConfig(ctx, testenv.UpdateRancherDeploymentWithChartConfigInput{
 			BootstrapClusterProxy: bootstrapClusterProxy,
-			AdditionalValues:      map[string]string{},
+			ChartRepoURL:          chartsResult.ChartRepoHTTPURL,
+			ChartRepoBranch:       chartsResult.Branch,
+			ChartVersion:          chartsResult.ChartVersion,
 		})
+
+		By("Waiting for Rancher to restart with new configuration")
+		// Wait for Rancher deployment to be ready after update
+		capiframework.WaitForDeploymentsAvailable(ctx, capiframework.WaitForDeploymentsAvailableInput{
+			Getter: bootstrapClusterProxy.GetClient(),
+			Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
+				Name:      "rancher",
+				Namespace: e2e.RancherNamespace,
+			}},
+		}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-rancher")...)
+
+		By("Waiting for Turtles controller deployment to be upgraded")
+		capiframework.WaitForDeploymentsAvailable(ctx, capiframework.WaitForDeploymentsAvailableInput{
+			Getter: bootstrapClusterProxy.GetClient(),
+			Deployment: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{
+				Name:      "rancher-turtles-controller-manager",
+				Namespace: e2e.RancherTurtlesNamespace,
+			}},
+		}, e2eConfig.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...)
 
 		By("Waiting for the upstream CAPI operator deployment to be removed")
 		framework.WaitForDeploymentsRemoved(ctx, framework.WaitForDeploymentsRemovedInput{
