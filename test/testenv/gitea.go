@@ -279,18 +279,6 @@ func DeployGitea(ctx context.Context, input DeployGiteaInput) *DeployGiteaResult
 		}, input.ServiceWaitInterval...).Should(Succeed())
 	}
 
-	By("Creating gitea secret")
-	turtlesframework.CreateSecret(ctx, turtlesframework.CreateSecretInput{
-		Creator:   input.BootstrapClusterProxy.GetClient(),
-		Name:      input.AuthSecretName,
-		Namespace: turtlesframework.FleetLocalNamespace,
-		Type:      corev1.SecretTypeBasicAuth,
-		Data: map[string]string{
-			"username": input.Username,
-			"password": input.Password,
-		},
-	})
-
 	return result
 }
 

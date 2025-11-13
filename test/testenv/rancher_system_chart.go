@@ -200,29 +200,34 @@ func BuildAndPushRancherChartsToGitea(ctx context.Context, input BuildAndPushRan
 	Expect(err).ToNot(HaveOccurred(), "Failed to run make build-local-rancher-charts: %s", string(output))
 
 	By("Configuring git remote to point to Gitea")
-	// Remove existing remote
-	removeRemoteCmd := exec.Command("git", "-C", input.RancherChartsRepoDir, "remote", "remove", "origin")
-	_, _ = removeRemoteCmd.CombinedOutput() // Ignore errors as remote might not exist
-
-	// Add Gitea remote with credentials embedded
-	// Strip protocol prefix if present
+	// Strip protocol prefix from server address
 	serverAddr := strings.TrimPrefix(input.GiteaServerAddress, "http://")
 	serverAddr = strings.TrimPrefix(serverAddr, "https://")
 
-	giteaRemoteURL := fmt.Sprintf("http://%s:%s@%s/%s/%s.git",
-		input.GiteaUsername, input.GiteaPassword,
+	// Construct Gitea remote URL
+	giteaRemoteURL := fmt.Sprintf("http://%s/%s/%s.git",
 		serverAddr,
-		input.GiteaUsername, input.GiteaRepoName)
+		input.GiteaUsername,
+		input.GiteaRepoName)
 
-	addRemoteCmd := exec.Command("git", "-C", input.RancherChartsRepoDir, "remote", "add", "origin", giteaRemoteURL)
-	output, err = addRemoteCmd.CombinedOutput()
-	Expect(err).ToNot(HaveOccurred(), "Failed to add git remote: %s", string(output))
+	turtlesframework.GitSetRemote(ctx, turtlesframework.GitSetRemoteInput{
+		RepoLocation: input.RancherChartsRepoDir,
+		RemoteName:   "origin",
+		RemoteURL:    giteaRemoteURL,
+		Username:     input.GiteaUsername,
+		Password:     input.GiteaPassword,
+	})
 
 	By("Pushing changes to Gitea")
 	// The Makefile already created a commit, so we just need to push
-	pushCmd := exec.Command("git", "-C", input.RancherChartsRepoDir, "push", "-u", "origin", "HEAD")
-	output, err = pushCmd.CombinedOutput()
-	Expect(err).ToNot(HaveOccurred(), "Failed to push to Gitea: %s", string(output))
+	// Force push is needed because Gitea creates an initial commit with README
+	turtlesframework.GitPush(ctx, turtlesframework.GitPushInput{
+		RepoLocation: input.RancherChartsRepoDir,
+		RemoteName:   "origin",
+		Username:     input.GiteaUsername,
+		Password:     input.GiteaPassword,
+		Force:        true,
+	})
 
 	// Construct the HTTP URL for Rancher to use (plain HTTP without auth in URL)
 	httpURL := fmt.Sprintf("http://%s/git/%s", serverAddr, input.GiteaRepoName)
